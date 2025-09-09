@@ -1,108 +1,77 @@
 # main.py
 import requests
-import pandas as pd
-import matplotlib.pyplot as plt
-import schedule
-import time
-import yagmail
-from config import API_KEY
+from bs4 import BeautifulSoup
+import csv
+from datetime import datetime
+import os
+from config import API_KEY  # chave ScraperAPI do config.py
 
-# ================================
-# Funções principais
-# ================================
+# --- Configurações ---
+url_produto = "https://lista.mercadolivre.com.br/notebook"
 
-def coletar_clima(cidade: str):
-    """Coleta dados climáticos atuais de uma cidade usando a API OpenWeatherMap."""
-    url = f"http://api.openweathermap.org/data/2.5/weather?q={cidade}&appid={API_KEY}&lang=pt_br&units=metric"
-    resposta = requests.get(url)
-    if resposta.status_code == 200:
-        dados = resposta.json()
-        return {
-            "cidade": cidade,
-            "descricao": dados['weather'][0]['description'],
-            "temperatura": dados['main']['temp'],
-            "vento": dados['wind']['speed'],
-            "umidade": dados['main']['humidity']
-        }
-    else:
-        print("Erro ao coletar clima:", resposta.status_code)
-        return None
+payload = {
+    'api_key': API_KEY,
+    'url': url_produto
+}
 
-def coletar_mare(local: str, data: str):
-    """Simula a coleta de dados de maré (aqui depois você vai integrar API ou PDF da Marinha)."""
-    # Exemplo fictício por enquanto
-    return {
-        "local": local,
-        "data": data,
-        "mare_alta": 2.1,
-        "mare_baixa": 0.5
-    }
+# --- Consulta a página via ScraperAPI ---
+response = requests.get('https://api.scraperapi.com/', params=payload)
 
-def analisar_condicoes(clima: dict, mare: dict):
-    """Analisa as condições e retorna se é favorável para atracação."""
-    if not clima or not mare:
-        return "Dados insuficientes para análise."
-    
-    regras = []
-    if 1.5 <= mare["mare_alta"] <= 2.5:
-        regras.append("✅ Maré dentro do ideal (1.5–2.5 m)")
-    else:
-        regras.append("⚠️ Maré fora do ideal")
+# --- Debug: mostrar status e início do HTML ---
+print("Status code:", response.status_code)
+print("Início do conteúdo retornado:")
+print(response.text[:500])
 
-    if clima["vento"] < 20:
-        regras.append("✅ Vento abaixo de 20 km/h")
-    else:
-        regras.append("⚠️ Vento forte")
+if response.status_code != 200:
+    print("Erro ao acessar a página")
+    exit()
 
-    if "chuva" not in clima["descricao"].lower():
-        regras.append("✅ Sem chuvas fortes")
-    else:
-        regras.append("⚠️ Chuva detectada")
+# --- Salvar HTML para inspecionar estrutura (temporário) ---
+with open("teste.html", "w", encoding="utf-8") as f:
+    f.write(response.text)
+print("HTML salvo em teste.html para inspeção")
 
-    return regras
+# --- Parse do HTML ---
+soup = BeautifulSoup(response.text, "html.parser")
 
-def gerar_relatorio(clima: dict, mare: dict, analise: list):
-    """Gera um relatório simples em texto."""
-    relatorio = f"""
-    ===== Relatório de Condições =====
-    Local: {clima['cidade']}
-    Temperatura: {clima['temperatura']} °C
-    Condição: {clima['descricao']}
-    Vento: {clima['vento']} km/h
-    Umidade: {clima['umidade']} %
+# --- Seletor atualizado para produtos ---
+produtos = soup.find_all("li", {"class": "ui-search-layout__item"})
 
-    Maré Alta: {mare['mare_alta']} m
-    Maré Baixa: {mare['mare_baixa']} m
+# --- Extrai nome e preço ---
+lista_produtos = []
+for p in produtos[:10]:  # pega só os 10 primeiros produtos
+    nome_tag = p.find("h2", class_="ui-search-item__title")
+    preco_tag = p.find("span", class_="price-tag-fraction")
+    if nome_tag and preco_tag:
+        lista_produtos.append({
+            "nome": nome_tag.text.strip(),
+            "preco": preco_tag.text.strip()
+        })
 
-    --- Análise ---
-    """
-    for regra in analise:
-        relatorio += f"\n- {regra}"
+if not lista_produtos:
+    print("Nenhum produto encontrado. Verifique a estrutura do HTML no teste.html")
+    exit()
 
-    return relatorio
+# --- Salva CSV ---
+os.makedirs("dados_historicos", exist_ok=True)
+data_hora = datetime.now().strftime("%Y%m%d_%H%M%S")
+csv_file = f"dados_historicos/produtos_{data_hora}.csv"
 
-def enviar_email(destinatarios: list, assunto: str, conteudo: str):
-    """Envia relatório por e-mail usando yagmail."""
-    try:
-        yag = yagmail.SMTP("SEU_EMAIL_AQUI", "SENHA_APP_AQUI")  # Config no config.py depois
-        yag.send(to=destinatarios, subject=assunto, contents=conteudo)
-        print("✅ Email enviado com sucesso!")
-    except Exception as e:
-        print("Erro ao enviar email:", e)
+with open(csv_file, "w", newline="", encoding="utf-8") as f:
+    writer = csv.DictWriter(f, fieldnames=["nome", "preco"])
+    writer.writeheader()
+    writer.writerows(lista_produtos)
 
-# ================================
-# Execução principal
-# ================================
-if __name__ == "__main__":
-    cidade = "Rio de Janeiro"
-    data = "2025-08-18"
+print(f"Dados salvos em {csv_file}")
 
-    clima = coletar_clima(cidade)
-    mare = coletar_mare(cidade, data)
-    analise = analisar_condicoes(clima, mare)
-    relatorio = gerar_relatorio(clima, mare, analise)
+# --- Gera relatório TXT ---
+os.makedirs("relatorios", exist_ok=True)
+txt_file = f"relatorios/relatorio_{data_hora}.txt"
 
-    print(relatorio)
+with open(txt_file, "w", encoding="utf-8") as f:
+    f.write("Relatório de Preços - TCC\n")
+    f.write(f"Data/Hora: {datetime.now()}\n\n")
+    for prod in lista_produtos:
+        f.write(f"{prod['nome']} - R$ {prod['preco']}\n")
 
-    # Exemplo de envio (coloque seus emails)
-    # enviar_email(["destinatario@gmail.com"], "Relatório Clima e Maré", relatorio)
+print(f"Relatório salvo em {txt_file}")
