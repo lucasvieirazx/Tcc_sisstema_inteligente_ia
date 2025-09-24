@@ -1,9 +1,26 @@
-# Tcc_sistema_inteligente_ia
+🎯 Tema do Projeto (TCC_SIstema_de_monitoramento)
 
-Este projeto é um sistema automatizado, desenvolvido em Python, para monitoramento de preços em plataformas de e-commerce.
-O objetivo é demonstrar como a integração entre APIs, web scraping e automação pode reduzir tarefas manuais e auxiliar na tomada de decisão de consumidores e gestores de lojas virtuais.
+Sistema de monitoramento de preços de notebooks e hardware em plataformas de e-commerce, com coleta via ScraperAPI, relatórios automáticos e envio de alertas por e-mail 
 
-🚀 Funcionalidades
-🔎 Coleta de preços em tempo real utilizando a ScraperAPI
-📝 Geração automática de relatórios em CSV (histórico de preços) e TXT (resumo)
-📧 Envio de relatórios por e-mail para múltiplos destinatários cadastrados em emails.xlsx
+Este projeto tem como objetivo desenvolver um **sistema automatizado de monitoramento de preços de notebooks e hardware em plataformas de e-commerce**, utilizando **Python** e integração com a **ScraperAPI**.
+O sistema coleta informações de preços em tempo real, organiza em relatórios automáticos e envia **alertas por e-mail** para usuários interessados.  
+Assim, reduz a necessidade de acompanhamento manual e fornece suporte à tomada de decisão, tanto para consumidores quanto para gestores de e-commerce.  
+
+## 🚀 Funcionalidades
+- 🔎 **Coleta de preços em tempo real** de sites como Amazon, Mercado Livre e outros marketplaces.  
+- 📊 **Geração de relatórios automáticos** (CSV, TXT e futuramente PDF).  
+- 📧 **Envio de alertas por e-mail** para usuários cadastrados.  
+- 🗂️ **Armazenamento histórico** dos preços coletados para análises comparativas.  
+- 📈 Possibilidade de criar **gráficos de evolução de preços** (com matplotlib).  
+
+## 🛠️ Tecnologias utilizadas
+- **Python 3.12+**  
+- **ScraperAPI** → coleta de dados  
+- **Requests** → integração HTTP  
+- **Pandas** → manipulação e organização de dados  
+- **Matplotlib** (opcional) → geração de gráficos  
+- **smtplib** → envio de e-mails automáticos  
+- **openpyxl** → integração com planilhas de contatos (Excel)  
+
+## 📂 Estrutura do Projeto
+...
