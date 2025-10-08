@@ -1,77 +1,106 @@
 # main.py
 import requests
-from bs4 import BeautifulSoup
 import csv
-from datetime import datetime
 import os
-from config import API_KEY  # chave ScraperAPI do config.py
+from datetime import datetime
+from config import API_KEY
+from enviar_email import enviar_relatorio
+from bs4 import BeautifulSoup
+import re
 
-# --- Configurações ---
-url_produto = "https://lista.mercadolivre.com.br/notebook"
+# Lista de produtos para monitorar
+produtos = [
+    {"nome": "Notebook Lenovo Ideapad 3", "url": "https://www.amazon.com.br/s?k=notebook+lenovo+ideapad+3"},
+    {"nome": "Notebook Acer Aspire 5", "url": "https://www.amazon.com.br/s?k=notebook+acer+aspire+5"},
+    {"nome": "Placa de Vídeo RTX 3060", "url": "https://www.amazon.com.br/s?k=rtx+3060"},
+]
 
-payload = {
-    'api_key': API_KEY,
-    'url': url_produto
-}
+def normalizar_preco(valor):
+    """Converte string de preço para float, ignorando intervalos ou texto extra."""
+    valor = valor.lower().replace("r$", "").replace(" ", "")
+    valor = valor.replace(",", ".")
+    match = re.search(r"\d+(\.\d+)*", valor)
+    if match:
+        numero = match.group()
+        # Remove pontos de milhar, mantendo o decimal correto
+        if numero.count(".") > 1:
+            partes = numero.split(".")
+            numero = "".join(partes[:-1]) + "." + partes[-1]
+        return float(numero)
+    else:
+        return 0.0
 
-# --- Consulta a página via ScraperAPI ---
-response = requests.get('https://api.scraperapi.com/', params=payload)
+def coletar_preco(produto):
+    """Coleta o preço principal de um produto na página usando BeautifulSoup."""
+    params = {'api_key': API_KEY, 'url': produto["url"]}
+    try:
+        response = requests.get("https://api.scraperapi.com/", params=params)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, "html.parser")
 
-# --- Debug: mostrar status e início do HTML ---
-print("Status code:", response.status_code)
-print("Início do conteúdo retornado:")
-print(response.text[:500])
+            possiveis_precos = []
+            for tag in soup.find_all("span"):
+                texto = tag.get_text().strip()
+                if re.match(r"r\$ ?\d{1,3}(?:[.,]\d{3})*[.,]\d{2}", texto.lower()):
+                    possiveis_precos.append(texto)
 
-if response.status_code != 200:
-    print("Erro ao acessar a página")
-    exit()
+            if not possiveis_precos:
+                conteudo = response.text.lower()
+                possiveis_precos = re.findall(r"r\$ ?\d{1,3}(?:[.,]\d{3})*[.,]\d{2}", conteudo)
 
-# --- Salvar HTML para inspecionar estrutura (temporário) ---
-with open("teste.html", "w", encoding="utf-8") as f:
-    f.write(response.text)
-print("HTML salvo em teste.html para inspeção")
+            if possiveis_precos:
+                # Remove duplicatas
+                precos_unicos = list(set(possiveis_precos))
 
-# --- Parse do HTML ---
-soup = BeautifulSoup(response.text, "html.parser")
+                # Pega o menor preço (normalmente o padrão do produto)
+                preco_formatado = sorted(precos_unicos, key=normalizar_preco)[0]
 
-# --- Seletor atualizado para produtos ---
-produtos = soup.find_all("li", {"class": "ui-search-layout__item"})
+                # Retorna o preço sem duplicação
+                return preco_formatado.upper()
+            else:
+                return "Preço não encontrado"
+        else:
+            return f"Erro HTTP {response.status_code}"
+    except Exception as e:
+        return f"Erro: {e}"
 
-# --- Extrai nome e preço ---
-lista_produtos = []
-for p in produtos[:10]:  # pega só os 10 primeiros produtos
-    nome_tag = p.find("h2", class_="ui-search-item__title")
-    preco_tag = p.find("span", class_="price-tag-fraction")
-    if nome_tag and preco_tag:
-        lista_produtos.append({
-            "nome": nome_tag.text.strip(),
-            "preco": preco_tag.text.strip()
-        })
 
-if not lista_produtos:
-    print("Nenhum produto encontrado. Verifique a estrutura do HTML no teste.html")
-    exit()
+def gerar_relatorios(dados):
+    """Cria CSV e TXT com os preços coletados"""
+    os.makedirs("dados_historicos", exist_ok=True)
+    os.makedirs("relatorios", exist_ok=True)
 
-# --- Salva CSV ---
-os.makedirs("dados_historicos", exist_ok=True)
-data_hora = datetime.now().strftime("%Y%m%d_%H%M%S")
-csv_file = f"dados_historicos/produtos_{data_hora}.csv"
+    data = datetime.now().strftime("%Y-%m-%d %H:%M")
 
-with open(csv_file, "w", newline="", encoding="utf-8") as f:
-    writer = csv.DictWriter(f, fieldnames=["nome", "preco"])
-    writer.writeheader()
-    writer.writerows(lista_produtos)
+    # CSV
+    with open("dados_historicos/precos.csv", "a", newline="", encoding="utf-8") as csvfile:
+        writer = csv.writer(csvfile)
+        if csvfile.tell() == 0:
+            writer.writerow(["Data", "Produto", "Preço"])
+        for produto, preco in dados.items():
+            writer.writerow([data, produto, preco])
 
-print(f"Dados salvos em {csv_file}")
+    # TXT
+    with open("relatorios/relatorio_atual.txt", "w", encoding="utf-8") as txtfile:
+        txtfile.write(f"Relatório de preços - {data}\n")
+        txtfile.write("="*50 + "\n")
+        for produto, preco in dados.items():
+            txtfile.write(f"{produto}: {preco}\n")
 
-# --- Gera relatório TXT ---
-os.makedirs("relatorios", exist_ok=True)
-txt_file = f"relatorios/relatorio_{data_hora}.txt"
+    print("\n✅ Relatórios gerados com sucesso!")
+    print("→ dados_historicos/precos.csv")
+    print("→ relatorios/relatorio_atual.txt")
 
-with open(txt_file, "w", encoding="utf-8") as f:
-    f.write("Relatório de Preços - TCC\n")
-    f.write(f"Data/Hora: {datetime.now()}\n\n")
-    for prod in lista_produtos:
-        f.write(f"{prod['nome']} - R$ {prod['preco']}\n")
+if __name__ == "__main__":
+    resultados = {}
+    print("🔍 Coletando preços...\n")
 
-print(f"Relatório salvo em {txt_file}")
+    for p in produtos:
+        preco = coletar_preco(p)
+        resultados[p["nome"]] = preco
+        print(f"{p['nome']}: {preco}")
+
+    gerar_relatorios(resultados)
+
+    # Envia relatório por e-mail
+    enviar_relatorio()

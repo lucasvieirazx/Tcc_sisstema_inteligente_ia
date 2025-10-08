@@ -1,0 +1,31 @@
+Data,Produto,Preço
+2025-10-08 13:40,Notebook Lenovo Ideapad 3,"r$ 2.799,00"
+2025-10-08 13:40,Notebook Acer Aspire 5,"r$ 2.899,00"
+2025-10-08 13:40,Placa de Vídeo RTX 3060,"r$2.950,00. o p"
+2025-10-08 13:46,Notebook Lenovo Ideapad 3,"r$ 2.934,52"
+2025-10-08 13:46,Notebook Acer Aspire 5,"r$ 2.899,00"
+2025-10-08 13:46,Placa de Vídeo RTX 3060,"r$2.950,00. o p"
+2025-10-08 13:49,Notebook Lenovo Ideapad 3,"r$ 2.799,00"
+2025-10-08 13:49,Notebook Acer Aspire 5,"r$ 2.899,00"
+2025-10-08 13:49,Placa de Vídeo RTX 3060,"r$2.950,00. o p"
+2025-10-08 13:56,Notebook Lenovo Ideapad 3,"r$ 2.934,52"
+2025-10-08 13:56,Notebook Acer Aspire 5,"r$ 2.899,00"
+2025-10-08 13:56,Placa de Vídeo RTX 3060,"r$2.950,00. o p"
+2025-10-08 14:03,Notebook Lenovo Ideapad 3,"r$5.776,67. o p"
+2025-10-08 14:03,Notebook Acer Aspire 5,"r$ 2.899,00"
+2025-10-08 14:03,Placa de Vídeo RTX 3060,"r$uedata=s:',"
+2025-10-08 14:57,Notebook Lenovo Ideapad 3,"R$39,99"
+2025-10-08 14:57,Notebook Acer Aspire 5,"R$39,99"
+2025-10-08 14:57,Placa de Vídeo RTX 3060,"R$105,75"
+2025-10-08 14:59,Notebook Lenovo Ideapad 3,Erro: could not convert string to float: 'R$3997.99'
+2025-10-08 14:59,Notebook Acer Aspire 5,Erro: could not convert string to float: 'R$3039.00'
+2025-10-08 14:59,Placa de Vídeo RTX 3060,Erro: could not convert string to float: 'R$1378.20'
+2025-10-08 15:01,Notebook Lenovo Ideapad 3,Erro: could not convert string to float: '3.000a4.000'
+2025-10-08 15:01,Notebook Acer Aspire 5,Erro: could not convert string to float: '12.200emais'
+2025-10-08 15:01,Placa de Vídeo RTX 3060,Erro: could not convert string to float: '1.700a2.200'
+2025-10-08 15:05,Notebook Lenovo Ideapad 3,"R$5.982,93"
+2025-10-08 15:05,Notebook Acer Aspire 5,"R$7.993,00"
+2025-10-08 15:05,Placa de Vídeo RTX 3060,"R$5.690,00R$5.690,00"
+2025-10-08 15:07,Notebook Lenovo Ideapad 3,R$2.500 A R$3.100
+2025-10-08 15:07,Notebook Acer Aspire 5,R$2.200 A R$3.000
+2025-10-08 15:07,Placa de Vídeo RTX 3060,R$1.700 A R$2.200

@@ -1,38 +1,53 @@
 # enviar_email.py
-import yagmail
-import pandas as pd
+import smtplib
+from email.message import EmailMessage
 from config import EMAIL, SENHA
+import openpyxl
+import os
 
-def enviar_relatorio(relatorio_path):
-    # --- Lê os destinatários do Excel ---
-    try:
-        df = pd.read_excel("emails.xlsx")
-        destinatarios = df["email"].dropna().tolist()
-    except Exception as e:
-        print("Erro ao ler emails.xlsx:", e)
-        return
+def carregar_destinatarios():
+    """Lê os e-mails do arquivo emails.xlsx"""
+    arquivo = "emails.xlsx"
+    if not os.path.exists(arquivo):
+        print("⚠️ Arquivo emails.xlsx não encontrado. Nenhum e-mail será enviado.")
+        return []
 
+    planilha = openpyxl.load_workbook(arquivo)
+    aba = planilha.active
+    emails = []
+
+    for linha in aba.iter_rows(min_row=2, values_only=True):
+        if linha[0]:
+            emails.append(linha[0])
+    return emails
+
+def enviar_relatorio():
+    """Envia o relatório TXT por e-mail para os destinatários"""
+    destinatarios = carregar_destinatarios()
     if not destinatarios:
-        print("Nenhum destinatário encontrado no emails.xlsx")
+        print("⚠️ Nenhum destinatário encontrado.")
         return
 
-    # --- Configura o Yagmail ---
-    try:
-        yag = yagmail.SMTP(EMAIL, SENHA)
-    except Exception as e:
-        print("Erro ao conectar no e-mail:", e)
+    caminho_relatorio = "relatorios/relatorio_atual.txt"
+    if not os.path.exists(caminho_relatorio):
+        print("⚠️ Relatório não encontrado. Gere o relatório antes de enviar.")
         return
 
-    # --- Envia o e-mail ---
-    assunto = "Relatório de Preços - TCC"
-    conteudo = f"Segue em anexo o relatório gerado.\n\nAtenciosamente,\nSistema TCC"
-    try:
-        yag.send(to=destinatarios, subject=assunto, contents=conteudo, attachments=relatorio_path)
-        print(f"Relatório enviado com sucesso para: {', '.join(destinatarios)}")
-    except Exception as e:
-        print("Erro ao enviar e-mail:", e)
+    # Lê o conteúdo do relatório
+    with open(caminho_relatorio, "r", encoding="utf-8") as f:
+        conteudo = f.read()
 
-# --- Teste rápido ---
-if __name__ == "__main__":
-    # Substitua pelo caminho de um relatório existente
-    enviar_relatorio("relatorios/relatorio_20250909_193012.txt")
+    # Cria o e-mail
+    msg = EmailMessage()
+    msg["Subject"] = "Relatório de Preços - Notebooks e Hardware"
+    msg["From"] = EMAIL
+    msg["To"] = ", ".join(destinatarios)
+    msg.set_content(conteudo)
+
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+            smtp.login(EMAIL, SENHA)
+            smtp.send_message(msg)
+            print(f"✅ E-mail enviado com sucesso para: {', '.join(destinatarios)}")
+    except Exception as e:
+        print(f"❌ Erro ao enviar e-mail: {e}")
